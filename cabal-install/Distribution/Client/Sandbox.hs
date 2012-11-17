@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Distribution.Client.Sandbox
@@ -8,6 +9,9 @@
 -----------------------------------------------------------------------------
 
 module Distribution.Client.Sandbox (
+#ifdef TEST
+    withSandboxBinDirOnSearchPath,
+#endif
     sandboxInit,
     sandboxDelete,
     sandboxAddSource,
