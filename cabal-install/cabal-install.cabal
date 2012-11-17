@@ -146,3 +146,12 @@ Executable cabal
     else
       build-depends: unix >= 1.0 && < 2.7
     c-sources: cbits/getnumcores.c
+
+test-suite spec
+  type:             exitcode-stdio-1.0
+  ghc-options:      -Wall -threaded
+  cpp-options:     -DTEST
+  hs-source-dirs:   . test
+  main-is:          Spec.hs
+  build-depends:    base
+                  , hspec >= 1.3
