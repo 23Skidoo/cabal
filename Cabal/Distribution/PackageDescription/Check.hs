@@ -216,6 +216,9 @@ checkSanity pkg =
       PackageBuildImpossible $ "Duplicate sections: " ++ commaSep duplicateNames
         ++ ". The name of every executable, test suite, and benchmark section in"
         ++ " the package must be unique."
+
+  , checkDuplicateDeps (buildDepends pkg) ""
+
   ]
   --TODO: check for name clashes case insensitively: windows file systems cannot cope.
 
@@ -246,6 +249,10 @@ checkLibrary _pkg lib =
        PackageBuildWarning $
             "Duplicate modules in library: "
          ++ commaSep (map display moduleDuplicates)
+
+    , checkDuplicateDeps
+        (targetBuildDepends . libBuildInfo $ lib)
+        " in library"
   ]
 
   where
@@ -277,6 +284,10 @@ checkExecutable pkg exe =
        PackageBuildWarning $
             "Duplicate modules in executable '" ++ exeName exe ++ "': "
          ++ commaSep (map display moduleDuplicates)
+
+  , checkDuplicateDeps
+      (targetBuildDepends . buildInfo $ exe)
+      (" in executable '" ++ exeName exe ++ "'")
   ]
   where
     moduleDuplicates = dups (exeModules exe)
@@ -322,6 +333,10 @@ checkTestSuite pkg test =
       PackageBuildImpossible $
            "The test suite " ++ testName test
         ++ " has the same name as the package."
+
+  , checkDuplicateDeps
+      (targetBuildDepends . testBuildInfo $ test)
+      (" in test suite '" ++ testName test ++ "'")
   ]
   where
     moduleDuplicates = dups $ testModules test
@@ -372,6 +387,10 @@ checkBenchmark pkg bm =
       PackageBuildImpossible $
            "The benchmark " ++ benchmarkName bm
         ++ " has the same name as the package."
+
+  , checkDuplicateDeps
+      (targetBuildDepends . benchmarkBuildInfo $ bm)
+      (" in benchmark '" ++ benchmarkName bm ++ "'")
   ]
   where
     moduleDuplicates = dups $ benchmarkModules bm
@@ -384,6 +403,17 @@ checkBenchmark pkg bm =
                                            | _lib <- maybeToList (library pkg)
                                            , let PackageName libName =
                                                    pkgName (package pkg) ]
+
+-- | Check that there are no multiple definitions of the same dependency in the
+-- provided build-depends list.
+checkDuplicateDeps :: [Dependency] -> String -> Maybe PackageCheck
+checkDuplicateDeps deps msg =
+  check (not . null $ depDuplicates) $
+    PackageBuildWarning $
+         "Multiple definitions of the same dependency" ++ msg ++ ": "
+      ++ commaSep (map display depDuplicates)
+  where
+    depDuplicates = dups [ name | Dependency name _ <- deps]
 
 -- ------------------------------------------------------------
 -- * Additional pure checks
